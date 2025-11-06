@@ -107,9 +107,79 @@ class AppleIDCrawler:
             # 访问目标页面
             response = self.session.get(self.base_url, timeout=30, allow_redirects=True)
             response.raise_for_status()
+            
+            # 检查响应头，看看是否被压缩
+            content_encoding = response.headers.get('Content-Encoding', '').lower()
+            logger.info(f"响应Content-Encoding: {content_encoding}")
+            logger.info(f"响应Content-Type: {response.headers.get('Content-Type', '未知')}")
+            
+            # 如果响应被压缩但未自动解压，手动解压
+            # 注意：如果响应内容已经是乱码，可能是压缩数据没有被正确解压
+            if content_encoding:
+                import gzip
+                try:
+                    import brotli
+                except ImportError:
+                    brotli = None
+                
+                try:
+                    if 'gzip' in content_encoding:
+                        logger.info("检测到gzip压缩，尝试手动解压...")
+                        decompressed = gzip.decompress(response.content)
+                        response._content = decompressed
+                        response._content_consumed = True
+                        logger.info(f"✅ gzip解压成功，解压后长度: {len(decompressed)} 字节")
+                    elif ('br' in content_encoding or 'brotli' in content_encoding) and brotli:
+                        logger.info("检测到brotli压缩，尝试手动解压...")
+                        decompressed = brotli.decompress(response.content)
+                        response._content = decompressed
+                        response._content_consumed = True
+                        logger.info(f"✅ brotli解压成功，解压后长度: {len(decompressed)} 字节")
+                    elif 'deflate' in content_encoding:
+                        import zlib
+                        logger.info("检测到deflate压缩，尝试手动解压...")
+                        decompressed = zlib.decompress(response.content)
+                        response._content = decompressed
+                        response._content_consumed = True
+                        logger.info(f"✅ deflate解压成功，解压后长度: {len(decompressed)} 字节")
+                except Exception as e:
+                    logger.warning(f"解压失败: {e}，尝试使用原始内容")
+            
+            # 如果响应内容看起来是乱码（不包含HTML标签），尝试自动检测并解压
+            raw_content = response.content
+            if not response.text or '<html' not in response.text.lower() and '<body' not in response.text.lower():
+                logger.warning("响应内容不包含HTML标签，可能是压缩数据，尝试自动解压...")
+                # 尝试gzip
+                try:
+                    import gzip
+                    decompressed = gzip.decompress(raw_content)
+                    if '<html' in decompressed.decode('utf-8', errors='ignore').lower():
+                        logger.info("✅ 通过gzip自动解压成功！")
+                        response._content = decompressed
+                        response._content_consumed = True
+                except:
+                    pass
+                
+                # 如果gzip失败，尝试brotli
+                if '<html' not in response.text.lower():
+                    try:
+                        import brotli
+                        decompressed = brotli.decompress(raw_content)
+                        if '<html' in decompressed.decode('utf-8', errors='ignore').lower():
+                            logger.info("✅ 通过brotli自动解压成功！")
+                            response._content = decompressed
+                            response._content_consumed = True
+                    except:
+                        pass
+            
             # 确保使用UTF-8编码
             if response.encoding.lower() not in ['utf-8', 'utf8']:
                 response.encoding = 'utf-8'
+            
+            # 检查响应内容是否可读（是否包含HTML标签）
+            if not response.text or len(response.text) < 100:
+                logger.error("响应内容为空或过短")
+                return None
             
             # 调试信息：检查响应内容
             logger.info(f"响应状态码: {response.status_code}")
