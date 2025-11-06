@@ -64,10 +64,16 @@ def main():
         # 在GitHub Actions中，只生成文件
         accounts = sync.load_accounts('apple_ids.json')
         if accounts:
+            logger.info(f"加载了 {len(accounts)} 个账号，开始生成文件...")
             sync.create_api_file(accounts, 'api_data.json')
+            logger.info("✅ 已生成 api_data.json")
             sync.create_blog_file(accounts, 'blog_accounts.json')
+            logger.info("✅ 已生成 blog_accounts.json")
             sync.create_simple_file(accounts, 'accounts_simple.json')
-            logger.info("✅ 文件已生成，将由GitHub Actions自动提交")
+            logger.info("✅ 已生成 accounts_simple.json")
+            logger.info("✅ 所有文件已生成，将由GitHub Actions自动提交")
+        else:
+            logger.warning("⚠️ 没有账号数据，无法生成文件")
     else:
         # 本地运行，执行完整的同步
         sync.sync()

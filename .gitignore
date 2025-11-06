@@ -40,12 +40,13 @@ TEST_GUIDE.md
 TEST_UPDATE.md
 UPDATE_NOTES.md
 
-# 生成的文件（GitHub Actions会自动生成）
-apple_ids.json
-api_data.json
-apple_ids_simple.json
-blog_accounts.json
-accounts_simple.json
+# 生成的文件（GitHub Actions会自动生成并提交）
+# 注意：这些文件不应该被忽略，因为需要提交到GitHub
+# apple_ids.json
+# api_data.json
+# apple_ids_simple.json
+# blog_accounts.json
+# accounts_simple.json
 
 # 本地定时任务（GitHub Actions不需要）
 scheduler.py

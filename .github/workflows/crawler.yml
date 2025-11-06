@@ -32,17 +32,29 @@ jobs:
       run: |
         python main.py
         
+    - name: 检查生成的文件
+      run: |
+        echo "检查生成的文件："
+        ls -la *.json || echo "没有找到JSON文件"
+        
     - name: 提交更改
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # 只添加存在的文件
-        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json 2>/dev/null || true
+        # 列出所有JSON文件
+        echo "查找JSON文件："
+        find . -name "*.json" -type f | grep -v node_modules || true
+        # 添加生成的文件
+        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json 2>&1 || true
+        # 显示git状态
+        echo "Git状态："
+        git status
         # 检查是否有文件需要提交
         if git diff --staged --quiet; then
           echo "没有文件需要提交"
         else
-          git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')"
-          git push
+          echo "准备提交文件..."
+          git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')" || echo "提交失败"
+          git push || echo "推送失败"
         fi
 
