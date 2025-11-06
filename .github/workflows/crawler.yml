@@ -34,27 +34,49 @@ jobs:
         
     - name: 检查生成的文件
       run: |
-        echo "检查生成的文件："
-        ls -la *.json || echo "没有找到JSON文件"
+        echo "=== 检查生成的文件 ==="
+        echo "当前目录："
+        pwd
+        echo ""
+        echo "所有JSON文件："
+        find . -name "*.json" -type f | grep -v node_modules | grep -v ".git" || echo "没有找到JSON文件"
+        echo ""
+        echo "检查特定文件是否存在："
+        [ -f "apple_ids.json" ] && echo "✅ apple_ids.json 存在 ($(du -h apple_ids.json | cut -f1))" || echo "❌ apple_ids.json 不存在"
+        [ -f "api_data.json" ] && echo "✅ api_data.json 存在 ($(du -h api_data.json | cut -f1))" || echo "❌ api_data.json 不存在"
+        [ -f "blog_accounts.json" ] && echo "✅ blog_accounts.json 存在 ($(du -h blog_accounts.json | cut -f1))" || echo "❌ blog_accounts.json 不存在"
+        [ -f "accounts_simple.json" ] && echo "✅ accounts_simple.json 存在 ($(du -h accounts_simple.json | cut -f1))" || echo "❌ accounts_simple.json 不存在"
+        [ -f "apple_ids_simple.json" ] && echo "✅ apple_ids_simple.json 存在 ($(du -h apple_ids_simple.json | cut -f1))" || echo "❌ apple_ids_simple.json 不存在"
         
     - name: 提交更改
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        # 列出所有JSON文件
-        echo "查找JSON文件："
-        find . -name "*.json" -type f | grep -v node_modules || true
-        # 添加生成的文件
-        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json 2>&1 || true
-        # 显示git状态
+        echo "=== 准备提交文件 ==="
+        echo "Git配置完成"
+        echo ""
+        echo "查找需要提交的文件："
+        find . -name "*.json" -type f | grep -v node_modules | grep -v ".git" || echo "没有找到JSON文件"
+        echo ""
+        echo "添加文件到Git："
+        git add apple_ids.json 2>&1 && echo "✅ 已添加 apple_ids.json" || echo "⚠️ apple_ids.json 添加失败（可能不存在）"
+        git add api_data.json 2>&1 && echo "✅ 已添加 api_data.json" || echo "⚠️ api_data.json 添加失败（可能不存在）"
+        git add blog_accounts.json 2>&1 && echo "✅ 已添加 blog_accounts.json" || echo "⚠️ blog_accounts.json 添加失败（可能不存在）"
+        git add accounts_simple.json 2>&1 && echo "✅ 已添加 accounts_simple.json" || echo "⚠️ accounts_simple.json 添加失败（可能不存在）"
+        git add apple_ids_simple.json 2>&1 && echo "✅ 已添加 apple_ids_simple.json" || echo "⚠️ apple_ids_simple.json 添加失败（可能不存在）"
+        echo ""
         echo "Git状态："
         git status
-        # 检查是否有文件需要提交
+        echo ""
+        echo "检查是否有文件需要提交："
         if git diff --staged --quiet; then
-          echo "没有文件需要提交"
+          echo "⚠️ 没有文件需要提交（可能是文件没有变化或文件不存在）"
+          echo "显示所有JSON文件的内容（前10行）："
+          [ -f "api_data.json" ] && head -10 api_data.json || echo "api_data.json 不存在"
         else
-          echo "准备提交文件..."
-          git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')" || echo "提交失败"
-          git push || echo "推送失败"
+          echo "✅ 有文件需要提交，准备提交..."
+          git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')" || echo "❌ 提交失败"
+          echo "准备推送到远程仓库..."
+          git push origin main || echo "❌ 推送失败"
+          echo "✅ 推送完成"
         fi
-
