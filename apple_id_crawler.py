@@ -76,6 +76,22 @@ class AppleIDCrawler:
                 logger.warning(f"⚠️ 响应内容过短（{len(response.text)}字符），可能是错误页面")
                 logger.info(f"响应内容预览: {response.text[:500]}")
             
+            # 检查是否包含Cloudflare挑战页面关键词
+            if 'challenge-platform' in response.text.lower() or 'cf-browser-verification' in response.text.lower():
+                logger.warning("⚠️ 检测到Cloudflare挑战页面，可能需要JavaScript渲染")
+                logger.info("响应内容前1000字符:")
+                logger.info(response.text[:1000])
+            
+            # 检查是否包含常见的HTML结构
+            has_html = '<html' in response.text.lower() or '<body' in response.text.lower()
+            has_div = '<div' in response.text.lower()
+            logger.info(f"响应包含HTML标签: {has_html}, 包含div标签: {has_div}")
+            
+            # 如果响应内容很短，输出更多信息
+            if len(response.text) < 5000:
+                logger.warning(f"⚠️ 响应内容较短，完整内容:")
+                logger.info(response.text)
+            
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # 尝试多种方式查找card元素
@@ -83,6 +99,15 @@ class AppleIDCrawler:
             cards_by_style = soup.find_all('div', class_='card', attrs={'style': True})
             logger.info(f"通过class='card'找到 {len(cards_by_class)} 个元素")
             logger.info(f"通过class='card'且有style找到 {len(cards_by_style)} 个元素")
+            
+            # 如果还是找不到，尝试查找所有div看看结构
+            all_divs = soup.find_all('div')
+            logger.info(f"页面中总共有 {len(all_divs)} 个div元素")
+            if len(all_divs) > 0 and len(all_divs) < 50:
+                logger.info("前10个div的class属性:")
+                for i, div in enumerate(all_divs[:10], 1):
+                    div_class = div.get('class', [])
+                    logger.info(f"  div {i}: class={div_class}")
             
             return soup
         except requests.RequestException as e:
@@ -243,8 +268,13 @@ class AppleIDCrawler:
         """通过HTML结构提取账号信息 - 基于实际HTML结构"""
         accounts = []
         
-        # 尝试多种方式查找card元素
-        # 方法1: 查找class包含'card'且有style属性的div（支持多个class）
+        # 运行逻辑说明：
+        # 1. 先找外层容器：<div class="card"> - 这是每个账号的容器
+        # 2. 从card里找：<div class="card-header"> 包含 <h5> 包含 <span>账号信息</span>
+        # 3. 从card里找：<div class="card-body"> 包含密码按钮等
+        
+        # 尝试多种方式查找card元素（外层容器）
+        # 方法1: 查找class包含'card'且有style属性的div（支持多个class，如"card border border-success"）
         cards = soup.find_all('div', class_=lambda x: x and 'card' in x, attrs={'style': True})
         logger.info(f"方法1: 找到 {len(cards)} 个card元素（class包含'card'且有style）")
         
@@ -263,7 +293,7 @@ class AppleIDCrawler:
             cards = soup.find_all('div', class_=re.compile('card', re.I))
             logger.info(f"方法4: 找到 {len(cards)} 个card元素（class包含'card'正则）")
         
-        # 方法5: 查找所有包含账号信息的div（最后的手段）
+        # 方法5: 查找所有包含账号信息的div（通过card-body或card-header）
         if not cards:
             # 查找包含邮箱或@符号的div，并且有card-body或card-header
             all_divs = soup.find_all('div')
@@ -275,12 +305,71 @@ class AppleIDCrawler:
                     cards.append(div)
             logger.info(f"方法5: 找到 {len(cards)} 个可能包含账号的div元素（通过card-body/card-header）")
         
+        # 方法6: 如果还是找不到card，直接查找包含账号信息的span元素（备用方案）
+        if not cards:
+            logger.info("方法6: 尝试直接查找包含账号信息的span元素...")
+            # 查找所有包含邮箱格式的span（支持***格式和完整邮箱）
+            account_spans = []
+            # 查找所有span元素
+            all_spans = soup.find_all('span')
+            logger.info(f"页面中总共有 {len(all_spans)} 个span元素")
+            
+            for span in all_spans:
+                span_text = span.get_text().strip()
+                # 检查是否包含邮箱格式
+                if re.search(r'[a-zA-Z0-9._%+-]+(\*\*\*)?@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', span_text):
+                    account_spans.append(span)
+                    logger.info(f"找到账号span: {span_text[:50]}")
+            
+            logger.info(f"找到 {len(account_spans)} 个包含账号的span元素")
+            
+            # 从span向上查找包含它的card容器
+            for span in account_spans:
+                # 向上查找，找到包含card-header或card-body的div
+                parent = span.find_parent()
+                depth = 0
+                while parent and depth < 10:  # 最多向上查找10层
+                    if parent.name == 'div':
+                        parent_class = parent.get('class', [])
+                        class_str = ' '.join(parent_class) if parent_class else ''
+                        # 检查是否包含card相关的class
+                        if ('card' in class_str.lower() or 
+                            'card-header' in class_str.lower() or 
+                            'card-body' in class_str.lower()):
+                            if parent not in cards:
+                                cards.append(parent)
+                                logger.info(f"通过span找到容器: class={class_str}")
+                                break
+                    parent = parent.find_parent()
+                    depth += 1
+            
+            logger.info(f"方法6: 通过span找到 {len(cards)} 个可能包含账号的容器")
+        
         for card in cards:
             try:
+                # 运行逻辑：
+                # HTML结构：<div class="card"> 
+                #   -> <div class="card-header"> 
+                #       -> <h5 class="my-0"> 
+                #           -> <span style="color: #6FD088">账号</span><span>【地区】</span>
+                #   -> <div class="card-body"> 
+                #       -> 密码按钮等
+                
                 # 提取h5标签中的账号名和地区
                 h5 = card.find('h5', class_='my-0')
                 if not h5:
-                    continue
+                    # 如果找不到h5，尝试直接从card-header或card-body中查找span
+                    card_header = card.find('div', class_=lambda x: x and 'card-header' in x)
+                    if card_header:
+                        # 从card-header中查找包含账号的span
+                        account_spans = card_header.find_all('span', string=re.compile(r'[a-zA-Z0-9._%+-]+(\*\*\*)?@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'))
+                        if account_spans:
+                            # 找到了账号span，继续处理
+                            h5 = card_header  # 用card-header代替h5
+                        else:
+                            continue
+                    else:
+                        continue
                 
                 # 从h5中提取账号名和地区
                 h5_text = h5.get_text()
