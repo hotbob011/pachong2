@@ -6,6 +6,8 @@ from apple_id_crawler import AppleIDCrawler
 from github_sync import GitHubSync
 import os
 import logging
+import time
+import json
 from datetime import datetime
 
 logging.basicConfig(
@@ -36,11 +38,21 @@ def main():
         import json
         with open('apple_ids.json', 'w', encoding='utf-8') as f:
             json.dump({'accounts': [], 'total': 0, 'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, f, ensure_ascii=False, indent=2)
-        return
+        logger.info("已创建空的apple_ids.json文件")
+        # 继续执行，生成其他文件
+        accounts = []
     
-    # 保存本地数据
-    crawler.save_to_json('apple_ids.json')
-    crawler.save_to_simple_json('apple_ids_simple.json')
+    # 保存本地数据（即使accounts为空也会创建文件）
+    if accounts:
+        crawler.save_to_json('apple_ids.json')
+        crawler.save_to_simple_json('apple_ids_simple.json')
+    else:
+        # 如果没有账号，创建空文件
+        with open('apple_ids.json', 'w', encoding='utf-8') as f:
+            json.dump({'accounts': [], 'total': 0, 'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, f, ensure_ascii=False, indent=2)
+        with open('apple_ids_simple.json', 'w', encoding='utf-8') as f:
+            json.dump({'accounts': [], 'total': 0}, f, ensure_ascii=False, indent=2)
+        logger.info("已创建空的apple_ids.json和apple_ids_simple.json文件")
     
     logger.info(f"成功爬取 {len(accounts)} 个账号")
     
@@ -58,13 +70,13 @@ def main():
     # 步骤3: 生成GitHub文件（供博客使用）
     # 注意：在GitHub Actions中，文件提交由workflow处理
     logger.info("\n[步骤3] 生成GitHub文件...")
-    sync = GitHubSync()
-    # 只生成文件，不执行git操作（GitHub Actions会处理提交）
+    
     if os.environ.get('GITHUB_ACTIONS'):
-        # 在GitHub Actions中，只生成文件
-        accounts = sync.load_accounts('apple_ids.json')
+        # 在GitHub Actions中，直接使用爬取的accounts生成文件
         if accounts:
-            logger.info(f"加载了 {len(accounts)} 个账号，开始生成文件...")
+            logger.info(f"使用爬取的 {len(accounts)} 个账号生成文件...")
+            sync = GitHubSync()
+            # 直接使用accounts列表生成文件，不需要从文件加载
             sync.create_api_file(accounts, 'api_data.json')
             logger.info("✅ 已生成 api_data.json")
             sync.create_blog_file(accounts, 'blog_accounts.json')
@@ -73,9 +85,19 @@ def main():
             logger.info("✅ 已生成 accounts_simple.json")
             logger.info("✅ 所有文件已生成，将由GitHub Actions自动提交")
         else:
-            logger.warning("⚠️ 没有账号数据，无法生成文件")
+            logger.warning("⚠️ 没有账号数据，生成空文件")
+            sync = GitHubSync()
+            # 即使没有账号，也生成所有文件（空文件）
+            sync.create_api_file([], 'api_data.json')
+            logger.info("✅ 已生成 api_data.json")
+            sync.create_blog_file([], 'blog_accounts.json')
+            logger.info("✅ 已生成 blog_accounts.json")
+            sync.create_simple_file([], 'accounts_simple.json')
+            logger.info("✅ 已生成 accounts_simple.json")
+            logger.info("✅ 所有文件已生成（空文件），将由GitHub Actions自动提交")
     else:
         # 本地运行，执行完整的同步
+        sync = GitHubSync()
         sync.sync()
     
     logger.info("\n" + "=" * 60)
