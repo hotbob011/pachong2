@@ -4,6 +4,7 @@ CC宝盒苹果ID爬虫 - 集成版
 """
 
 import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 import json
 import re
@@ -31,7 +32,20 @@ class AppleIDCrawler:
         """
         self.base_url = "https://ccbaohe.com/appleID/"
         self.api_url = api_url  # 例如: "http://your-domain.com/data_sync.php"
-        self.session = requests.Session()
+        
+        # 使用cloudscraper绕过Cloudflare保护
+        try:
+            self.session = cloudscraper.create_scraper(
+                browser={
+                    'browser': 'chrome',
+                    'platform': 'windows',
+                    'desktop': True
+                }
+            )
+            logger.info("✅ 使用cloudscraper创建会话（可绕过Cloudflare）")
+        except Exception as e:
+            logger.warning(f"⚠️ cloudscraper初始化失败，回退到requests: {e}")
+            self.session = requests.Session()
         
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -91,6 +105,25 @@ class AppleIDCrawler:
             if len(response.text) < 5000:
                 logger.warning(f"⚠️ 响应内容较短，完整内容:")
                 logger.info(response.text)
+            
+            # 保存实际返回的HTML内容到文件（用于调试）
+            try:
+                with open('debug_response.html', 'w', encoding='utf-8') as f:
+                    f.write(response.text)
+                logger.info("✅ 已保存响应内容到 debug_response.html（用于调试）")
+            except:
+                pass
+            
+            # 检查响应内容的前500字符，看看实际返回了什么
+            response_preview = response.text[:500]
+            logger.info(f"响应内容前500字符预览:")
+            logger.info(response_preview)
+            
+            # 检查是否是Cloudflare挑战页面
+            if 'challenge-platform' in response.text.lower() or 'cf-browser-verification' in response.text.lower() or 'just a moment' in response.text.lower():
+                logger.error("❌ 检测到Cloudflare挑战页面！GitHub Actions无法通过JavaScript验证")
+                logger.error("解决方案：可能需要使用Selenium等工具来渲染JavaScript，或者使用代理")
+                return None
             
             soup = BeautifulSoup(response.text, 'html.parser')
             
