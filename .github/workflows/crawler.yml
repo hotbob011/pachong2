@@ -47,6 +47,7 @@ jobs:
         [ -f "blog_accounts.json" ] && echo "✅ blog_accounts.json 存在 ($(du -h blog_accounts.json | cut -f1))" || echo "❌ blog_accounts.json 不存在"
         [ -f "accounts_simple.json" ] && echo "✅ accounts_simple.json 存在 ($(du -h accounts_simple.json | cut -f1))" || echo "❌ accounts_simple.json 不存在"
         [ -f "apple_ids_simple.json" ] && echo "✅ apple_ids_simple.json 存在 ($(du -h apple_ids_simple.json | cut -f1))" || echo "❌ apple_ids_simple.json 不存在"
+        [ -f "debug_response.html" ] && echo "✅ debug_response.html 存在 ($(du -h debug_response.html | cut -f1))" || echo "⚠️ debug_response.html 不存在（用于调试）"
         
     - name: 提交更改
       run: |
@@ -64,6 +65,7 @@ jobs:
         git add blog_accounts.json 2>&1 && echo "✅ 已添加 blog_accounts.json" || echo "⚠️ blog_accounts.json 添加失败（可能不存在）"
         git add accounts_simple.json 2>&1 && echo "✅ 已添加 accounts_simple.json" || echo "⚠️ accounts_simple.json 添加失败（可能不存在）"
         git add apple_ids_simple.json 2>&1 && echo "✅ 已添加 apple_ids_simple.json" || echo "⚠️ apple_ids_simple.json 添加失败（可能不存在）"
+        git add debug_response.html 2>&1 && echo "✅ 已添加 debug_response.html（调试文件）" || echo "⚠️ debug_response.html 添加失败（可能不存在）"
         echo ""
         echo "Git状态："
         git status
