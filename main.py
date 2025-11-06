@@ -6,6 +6,7 @@ from apple_id_crawler import AppleIDCrawler
 from github_sync import GitHubSync
 import os
 import logging
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -31,6 +32,10 @@ def main():
     
     if not accounts:
         logger.error("未爬取到账号数据，终止执行")
+        # 即使没有账号，也创建空文件，避免Git错误
+        import json
+        with open('apple_ids.json', 'w', encoding='utf-8') as f:
+            json.dump({'accounts': [], 'total': 0, 'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S')}, f, ensure_ascii=False, indent=2)
         return
     
     # 保存本地数据

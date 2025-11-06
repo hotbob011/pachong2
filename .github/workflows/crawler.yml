@@ -9,6 +9,8 @@ on:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许写入仓库
     
     steps:
     - name: 检出代码
@@ -34,7 +36,13 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json || true
-        git diff --staged --quiet || git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')"
-        git push
+        # 只添加存在的文件
+        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json 2>/dev/null || true
+        # 检查是否有文件需要提交
+        if git diff --staged --quiet; then
+          echo "没有文件需要提交"
+        else
+          git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
 
