@@ -49,12 +49,36 @@ class AppleIDCrawler:
         """获取网页内容"""
         try:
             logger.info(f"正在访问: {self.base_url}")
-            response = self.session.get(self.base_url, timeout=15)
+            response = self.session.get(self.base_url, timeout=30)
             response.raise_for_status()
             # 确保使用UTF-8编码
             if response.encoding.lower() not in ['utf-8', 'utf8']:
                 response.encoding = 'utf-8'
-            return BeautifulSoup(response.text, 'html.parser')
+            
+            # 调试信息：检查响应内容
+            logger.info(f"响应状态码: {response.status_code}")
+            logger.info(f"响应内容长度: {len(response.text)} 字符")
+            
+            # 检查是否包含card元素的关键词
+            if 'card' in response.text.lower():
+                logger.info("✅ 响应中包含'card'关键词")
+            else:
+                logger.warning("⚠️ 响应中未找到'card'关键词")
+            
+            # 检查是否被重定向或返回错误页面
+            if len(response.text) < 1000:
+                logger.warning(f"⚠️ 响应内容过短（{len(response.text)}字符），可能是错误页面")
+                logger.info(f"响应内容预览: {response.text[:500]}")
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 尝试多种方式查找card元素
+            cards_by_class = soup.find_all('div', class_='card')
+            cards_by_style = soup.find_all('div', class_='card', attrs={'style': True})
+            logger.info(f"通过class='card'找到 {len(cards_by_class)} 个元素")
+            logger.info(f"通过class='card'且有style找到 {len(cards_by_style)} 个元素")
+            
+            return soup
         except requests.RequestException as e:
             logger.error(f"请求失败: {e}")
             return None
@@ -213,9 +237,30 @@ class AppleIDCrawler:
         """通过HTML结构提取账号信息 - 基于实际HTML结构"""
         accounts = []
         
-        # 查找所有card元素（每个账号一个card）
+        # 尝试多种方式查找card元素
+        # 方法1: 查找class='card'且有style属性的div
         cards = soup.find_all('div', class_='card', attrs={'style': True})
-        logger.info(f"找到 {len(cards)} 个card元素")
+        logger.info(f"方法1: 找到 {len(cards)} 个card元素（class='card'且有style）")
+        
+        # 方法2: 如果方法1失败，尝试只查找class='card'
+        if not cards:
+            cards = soup.find_all('div', class_='card')
+            logger.info(f"方法2: 找到 {len(cards)} 个card元素（class='card'）")
+        
+        # 方法3: 如果还是失败，尝试查找包含'card'的class
+        if not cards:
+            cards = soup.find_all('div', class_=re.compile('card', re.I))
+            logger.info(f"方法3: 找到 {len(cards)} 个card元素（class包含'card'）")
+        
+        # 方法4: 查找所有包含账号信息的div
+        if not cards:
+            # 查找包含邮箱或@符号的div
+            all_divs = soup.find_all('div')
+            for div in all_divs:
+                div_text = div.get_text()
+                if '@' in div_text or '***' in div_text:
+                    cards.append(div)
+            logger.info(f"方法4: 找到 {len(cards)} 个可能包含账号的div元素")
         
         for card in cards:
             try:
