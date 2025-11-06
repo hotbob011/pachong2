@@ -35,12 +35,18 @@ class AppleIDCrawler:
         
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
-            'Referer': 'https://ccbaohe.com/'
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0',
+            'Referer': 'https://ccbaohe.com/',
+            'DNT': '1'
         })
         
         self.accounts = []
@@ -238,29 +244,36 @@ class AppleIDCrawler:
         accounts = []
         
         # 尝试多种方式查找card元素
-        # 方法1: 查找class='card'且有style属性的div
-        cards = soup.find_all('div', class_='card', attrs={'style': True})
-        logger.info(f"方法1: 找到 {len(cards)} 个card元素（class='card'且有style）")
+        # 方法1: 查找class包含'card'且有style属性的div（支持多个class）
+        cards = soup.find_all('div', class_=lambda x: x and 'card' in x, attrs={'style': True})
+        logger.info(f"方法1: 找到 {len(cards)} 个card元素（class包含'card'且有style）")
         
-        # 方法2: 如果方法1失败，尝试只查找class='card'
+        # 方法2: 如果方法1失败，尝试查找class包含'card'的div（支持多个class）
+        if not cards:
+            cards = soup.find_all('div', class_=lambda x: x and 'card' in x)
+            logger.info(f"方法2: 找到 {len(cards)} 个card元素（class包含'card'）")
+        
+        # 方法3: 如果还是失败，尝试查找class='card'（精确匹配）
         if not cards:
             cards = soup.find_all('div', class_='card')
-            logger.info(f"方法2: 找到 {len(cards)} 个card元素（class='card'）")
+            logger.info(f"方法3: 找到 {len(cards)} 个card元素（class='card'精确匹配）")
         
-        # 方法3: 如果还是失败，尝试查找包含'card'的class
+        # 方法4: 如果还是失败，尝试查找包含'card'的class（正则）
         if not cards:
             cards = soup.find_all('div', class_=re.compile('card', re.I))
-            logger.info(f"方法3: 找到 {len(cards)} 个card元素（class包含'card'）")
+            logger.info(f"方法4: 找到 {len(cards)} 个card元素（class包含'card'正则）")
         
-        # 方法4: 查找所有包含账号信息的div
+        # 方法5: 查找所有包含账号信息的div（最后的手段）
         if not cards:
-            # 查找包含邮箱或@符号的div
+            # 查找包含邮箱或@符号的div，并且有card-body或card-header
             all_divs = soup.find_all('div')
             for div in all_divs:
-                div_text = div.get_text()
-                if '@' in div_text or '***' in div_text:
+                # 检查是否有card-body或card-header子元素
+                has_card_body = div.find('div', class_=lambda x: x and 'card-body' in x) is not None
+                has_card_header = div.find('div', class_=lambda x: x and 'card-header' in x) is not None
+                if has_card_body or has_card_header:
                     cards.append(div)
-            logger.info(f"方法4: 找到 {len(cards)} 个可能包含账号的div元素")
+            logger.info(f"方法5: 找到 {len(cards)} 个可能包含账号的div元素（通过card-body/card-header）")
         
         for card in cards:
             try:
