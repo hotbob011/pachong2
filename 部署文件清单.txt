@@ -1,0 +1,47 @@
+========================================
+服务器部署 - 必需文件清单
+========================================
+
+【必须上传的文件】
+-------------------
+1. apple_id_crawler.py      - 核心爬虫脚本
+2. main.py                   - 主执行脚本
+3. github_sync.py            - GitHub同步（如果使用）
+4. scheduler.py              - 定时任务（如果使用）
+5. vpn_ads.json              - VPN广告数据
+6. requirements.txt           - Python依赖列表
+
+【可选文件】
+-------------------
+- simple_test.py             - 测试脚本
+- 部署说明.md                - 部署文档
+
+【不需要上传的文件】
+-------------------
+- *.bat                       - Windows批处理文件
+- test_result.json           - 测试结果（会重新生成）
+- api_data.json              - 运行后自动生成
+- apple_ids.json             - 运行后自动生成
+
+========================================
+快速部署命令
+========================================
+
+1. 安装依赖：
+   pip install -r requirements.txt
+
+2. 配置API URL（可选）：
+   export API_URL="http://your-domain.com/data_sync.php"
+
+3. 测试运行：
+   python3 simple_test.py
+
+4. 正式运行：
+   python3 main.py
+
+5. 定时任务（每2小时）：
+   python3 scheduler.py
+   或使用crontab
+
+========================================
+

@@ -1,0 +1,92 @@
+========================================
+GitHub快速上传步骤（详细版）
+========================================
+
+【准备工作】
+-------------------
+1. 确保已安装Git（如果没有，访问：https://git-scm.com/download/win）
+2. 确保有GitHub账号（如果没有，访问：https://github.com 注册）
+
+【步骤1：打开终端】
+-------------------
+方法A：Git Bash（推荐）
+  - 在项目文件夹中右键 → "Git Bash Here"
+
+方法B：命令提示符
+  - 按住Shift键，右键 → "在此处打开PowerShell窗口"
+
+【步骤2：初始化Git仓库】
+-------------------
+在终端中输入：
+  git init
+
+【步骤3：添加文件】
+-------------------
+  git add .
+
+说明：会自动过滤掉不需要的文件（.gitignore已配置）
+
+【步骤4：创建提交】
+-------------------
+  git commit -m "初始提交：苹果ID爬虫"
+
+【步骤5：在GitHub创建仓库】
+-------------------
+1. 访问：https://github.com
+2. 登录账号
+3. 点击右上角 "+" → "New repository"
+4. 输入仓库名称（例如：apple-id-crawler）
+5. 选择 Public 或 Private
+6. 不要勾选任何选项（README、.gitignore等）
+7. 点击 "Create repository"
+
+【步骤6：连接本地到GitHub】
+-------------------
+在终端中输入（替换成你的实际地址）：
+  git remote add origin https://github.com/你的用户名/仓库名.git
+
+示例：
+  git remote add origin https://github.com/zhangsan/apple-id-crawler.git
+
+【步骤7：重命名分支】
+-------------------
+  git branch -M main
+
+【步骤8：推送到GitHub】
+-------------------
+  git push -u origin main
+
+如果提示输入用户名和密码：
+  - 用户名：你的GitHub用户名
+  - 密码：需要使用Personal Access Token
+    （访问：https://github.com/settings/tokens 创建）
+
+【步骤9：验证上传】
+-------------------
+1. 刷新GitHub仓库页面
+2. 检查文件是否都已上传
+3. 确认有 .github/workflows/crawler.yml 文件
+
+【步骤10：启用GitHub Actions】
+-------------------
+1. 点击仓库顶部的 "Actions" 标签
+2. 如果看到工作流，点击 "Enable"
+3. 点击 "Run workflow" 测试运行
+
+【步骤11：设置API URL（可选）】
+-------------------
+如果需要同步到网站后台：
+1. Settings → Secrets and variables → Actions
+2. New repository secret
+3. Name: API_URL
+4. Secret: 你的API地址
+5. Add secret
+
+========================================
+完成！
+========================================
+
+现在爬虫会每小时自动运行一次！
+
+========================================
+

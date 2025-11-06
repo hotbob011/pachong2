@@ -1,0 +1,40 @@
+name: 苹果ID爬虫自动运行
+
+on:
+  schedule:
+    # 每小时运行一次（UTC时间）
+    - cron: '0 * * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+      
+    - name: 设置Python环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: 安装依赖
+      run: |
+        pip install -r requirements.txt
+        
+    - name: 运行爬虫
+      env:
+        API_URL: ${{ secrets.API_URL }}
+        GITHUB_ACTIONS: true
+      run: |
+        python main.py
+        
+    - name: 提交更改
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add apple_ids.json api_data.json apple_ids_simple.json blog_accounts.json accounts_simple.json || true
+        git diff --staged --quiet || git commit -m "自动更新: $(date +'%Y-%m-%d %H:%M:%S')"
+        git push
+
