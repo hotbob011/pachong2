@@ -33,16 +33,40 @@ class AppleIDCrawler:
         self.base_url = "https://ccbaohe.com/appleID/"
         self.api_url = api_url  # 例如: "http://your-domain.com/data_sync.php"
         
-        # 使用cloudscraper绕过Cloudflare保护
+        # 使用cloudscraper绕过Cloudflare保护（增强版）
         try:
-            self.session = cloudscraper.create_scraper(
-                browser={
+            # 尝试多种浏览器配置
+            browser_configs = [
+                {
                     'browser': 'chrome',
                     'platform': 'windows',
                     'desktop': True
+                },
+                {
+                    'browser': 'firefox',
+                    'platform': 'windows',
+                    'desktop': True
+                },
+                {
+                    'browser': 'chrome',
+                    'platform': 'linux',
+                    'desktop': True
                 }
-            )
-            logger.info("✅ 使用cloudscraper创建会话（可绕过Cloudflare）")
+            ]
+            
+            self.session = None
+            for config in browser_configs:
+                try:
+                    self.session = cloudscraper.create_scraper(browser=config)
+                    logger.info(f"✅ 使用cloudscraper创建会话（配置: {config['browser']}）")
+                    break
+                except:
+                    continue
+            
+            if not self.session:
+                # 如果所有配置都失败，使用默认配置
+                self.session = cloudscraper.create_scraper()
+                logger.info("✅ 使用cloudscraper默认配置创建会话")
         except Exception as e:
             logger.warning(f"⚠️ cloudscraper初始化失败，回退到requests: {e}")
             self.session = requests.Session()
@@ -69,7 +93,19 @@ class AppleIDCrawler:
         """获取网页内容"""
         try:
             logger.info(f"正在访问: {self.base_url}")
-            response = self.session.get(self.base_url, timeout=30)
+            
+            # 添加延迟，模拟人类行为
+            time.sleep(2)
+            
+            # 先访问主页，建立会话
+            try:
+                self.session.get("https://ccbaohe.com/", timeout=15)
+                time.sleep(1)
+            except:
+                pass
+            
+            # 访问目标页面
+            response = self.session.get(self.base_url, timeout=30, allow_redirects=True)
             response.raise_for_status()
             # 确保使用UTF-8编码
             if response.encoding.lower() not in ['utf-8', 'utf8']:
@@ -90,16 +126,53 @@ class AppleIDCrawler:
                 logger.warning(f"⚠️ 响应内容过短（{len(response.text)}字符），可能是错误页面")
                 logger.info(f"响应内容预览: {response.text[:500]}")
             
-            # 检查是否包含Cloudflare挑战页面关键词
-            if 'challenge-platform' in response.text.lower() or 'cf-browser-verification' in response.text.lower():
-                logger.warning("⚠️ 检测到Cloudflare挑战页面，可能需要JavaScript渲染")
-                logger.info("响应内容前1000字符:")
-                logger.info(response.text[:1000])
+            # 检查是否是Cloudflare挑战页面（更全面的检测）
+            cf_indicators = [
+                'challenge-platform',
+                'cf-browser-verification',
+                'just a moment',
+                'checking your browser',
+                'ddos protection',
+                'cf-ray',
+                'cloudflare',
+                '__cf_bm',
+                'cf_clearance'
+            ]
+            
+            is_cf_challenge = any(indicator in response.text.lower() for indicator in cf_indicators)
+            
+            if is_cf_challenge:
+                logger.error("❌ 检测到Cloudflare挑战页面！")
+                logger.error("响应内容可能包含JavaScript挑战，需要浏览器渲染")
+                
+                # 尝试保存完整响应用于分析
+                try:
+                    with open('cf_challenge_response.html', 'w', encoding='utf-8') as f:
+                        f.write(response.text)
+                    logger.info("已保存Cloudflare挑战页面到 cf_challenge_response.html")
+                except:
+                    pass
+                
+                # 如果响应很短，可能是重定向或错误页面
+                if len(response.text) < 5000:
+                    logger.warning("响应内容过短，可能是被拦截")
+                    # 不直接返回None，继续尝试解析
+                else:
+                    # 如果响应很长但没有card，可能是JavaScript渲染的内容
+                    logger.warning("⚠️ 响应内容可能需要在浏览器中渲染JavaScript才能看到真实内容")
+                    logger.warning("建议：使用Selenium或Playwright等工具来渲染JavaScript")
             
             # 检查是否包含常见的HTML结构
             has_html = '<html' in response.text.lower() or '<body' in response.text.lower()
             has_div = '<div' in response.text.lower()
-            logger.info(f"响应包含HTML标签: {has_html}, 包含div标签: {has_div}")
+            has_script = '<script' in response.text.lower()
+            logger.info(f"响应包含HTML标签: {has_html}, 包含div标签: {has_div}, 包含script标签: {has_script}")
+            
+            # 如果包含大量JavaScript但没有div，可能是需要渲染的页面
+            if has_script and not has_div and len(response.text) > 5000:
+                logger.warning("⚠️ 响应包含大量JavaScript但缺少HTML结构，可能需要浏览器渲染")
+                logger.warning("响应内容前1000字符:")
+                logger.warning(response.text[:1000])
             
             # 如果响应内容很短，输出更多信息
             if len(response.text) < 5000:
@@ -802,6 +875,7 @@ class AppleIDCrawler:
 def main():
     """主函数"""
     import sys
+    import os
     
     # 从命令行参数或环境变量获取API URL
     api_url = None
@@ -833,5 +907,4 @@ def main():
 
 
 if __name__ == '__main__':
-    import os
     main()
