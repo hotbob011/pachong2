@@ -1,28 +1,28 @@
 {
-  "update_time": "2025-12-05 19:12:42",
+  "update_time": "2025-12-05 20:17:26",
   "count": 2,
   "accounts": [
     {
-      "account": "ro***@gmail.com",
-      "email": "robertwang380@gmail.com",
-      "fullEmail": "robertwang380@gmail.com",
-      "password": "fgKXq3uWA6",
+      "account": "be***@gmail.com",
+      "email": "beckderick658@gmail.com",
+      "fullEmail": "beckderick658@gmail.com",
+      "password": "1GRDXT7Hjg",
+      "region": "HK",
+      "regionName": "香港",
+      "status": "正常",
+      "checkTime": "2025-12-06 04:04:29",
+      "crawl_time": "2025-12-05 20:17:26"
+    },
+    {
+      "account": "",
+      "email": "2@kuaiyun1.com",
+      "fullEmail": "2@kuaiyun1.com",
+      "password": "h8hfZD4uHT",
       "region": "US",
       "regionName": "美国",
       "status": "正常",
-      "checkTime": "7分钟前更新",
-      "crawl_time": "2025-12-05 19:12:42"
-    },
-    {
-      "account": "br***@gmail.com",
-      "email": "brucexbradleyyazhx@gmail.com",
-      "fullEmail": "brucexbradleyyazhx@gmail.com",
-      "password": "sERjxGAUz5",
-      "region": "VN",
-      "regionName": "越南",
-      "status": "正常",
-      "checkTime": "2025-12-06 02:57:29",
-      "crawl_time": "2025-12-05 19:12:42"
+      "checkTime": "2025-12-06 03:57:51",
+      "crawl_time": "2025-12-05 20:17:26"
     }
   ]
 }
