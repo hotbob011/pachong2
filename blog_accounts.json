@@ -1,7 +1,18 @@
 {
-  "update_time": "2025-12-06 08:18:57",
+  "update_time": "2025-12-06 09:14:41",
   "count": 2,
   "accounts": [
+    {
+      "account": "qf***@163.com",
+      "email": "qfpcwzp942@163.com",
+      "fullEmail": "qfpcwzp942@163.com",
+      "password": "mxhp8mP9BJ",
+      "region": "US",
+      "regionName": "美国",
+      "status": "正常",
+      "checkTime": "15分钟前更新",
+      "crawl_time": "2025-12-06 09:14:41"
+    },
     {
       "account": "17***@kuaiyun1.com",
       "email": "17@kuaiyun1.com",
@@ -10,19 +21,8 @@
       "region": "KR",
       "regionName": "韩国",
       "status": "正常",
-      "checkTime": "2025-12-06 16:09:33",
-      "crawl_time": "2025-12-06 08:18:57"
-    },
-    {
-      "account": "nb***@hotmail.com",
-      "email": "nbrvc11222@hotmail.com",
-      "fullEmail": "nbrvc11222@hotmail.com",
-      "password": "RVdE5JjDWs",
-      "region": "US",
-      "regionName": "美国",
-      "status": "正常",
-      "checkTime": "2025-11-07 12:22:45",
-      "crawl_time": "2025-12-06 08:18:57"
+      "checkTime": "2025-12-06 16:16:03",
+      "crawl_time": "2025-12-06 09:14:41"
     }
   ]
 }
