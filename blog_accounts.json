@@ -1,28 +1,28 @@
 {
-  "update_time": "2026-02-19 01:45:40",
+  "update_time": "2026-02-19 04:14:57",
   "count": 2,
   "accounts": [
     {
-      "account": "",
-      "email": "8@kuaiyun1.com",
-      "fullEmail": "8@kuaiyun1.com",
-      "password": "RKSUnC6drN",
-      "region": "JP",
-      "regionName": "日本",
-      "status": "正常",
-      "checkTime": "2026-02-19 09:31:40",
-      "crawl_time": "2026-02-19 01:45:40"
-    },
-    {
-      "account": "ao***@icloud.com",
-      "email": "aocflno476251@icloud.com",
-      "fullEmail": "aocflno476251@icloud.com",
-      "password": "dhuxwWdS6Y",
+      "account": "ow***@icloud.com",
+      "email": "owegjmt122604@icloud.com",
+      "fullEmail": "owegjmt122604@icloud.com",
+      "password": "rDTP8zybsU",
       "region": "HK",
       "regionName": "香港",
       "status": "正常",
-      "checkTime": "2026-02-19 09:36:57",
-      "crawl_time": "2026-02-19 01:45:40"
+      "checkTime": "2026-02-19 11:53:23",
+      "crawl_time": "2026-02-19 04:14:57"
+    },
+    {
+      "account": "13***@kuaiyun1.com",
+      "email": "13@kuaiyun1.com",
+      "fullEmail": "13@kuaiyun1.com",
+      "password": "W4Kdcnk9Kq",
+      "region": "US",
+      "regionName": "美国",
+      "status": "正常",
+      "checkTime": "2026-02-19 11:55:51",
+      "crawl_time": "2026-02-19 04:14:57"
     }
   ]
 }
